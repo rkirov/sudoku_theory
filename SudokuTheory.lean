@@ -1,3 +1,5 @@
+import SudokuTheory.Defs
+
 /-!
 # Sudoku Formal Math Theory
 
