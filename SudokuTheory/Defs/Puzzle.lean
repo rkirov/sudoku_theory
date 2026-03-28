@@ -141,4 +141,35 @@ def HardPuzzle (m n : Nat) [NeZero m] [NeZero n] (p : Puzzle m n) : Prop :=
   ∀ c : Cell m n, p c.1 c.2 = none →
     2 ≤ (possibleSet m n p c).card
 
+/-!
+## Open Problem: Existence of Hard Puzzles
+
+For which block dimensions {lit}`m × n` does a hard puzzle exist?
+
+**Known results:**
+- {lit}`m * n = 1`: **No.** The single cell has at most one possible value.
+- {lit}`m = n = 2` (4×4): **No.** Exhaustive search over all 288 valid
+  boards confirms that no hard puzzle exists. The constraints are too tight:
+  removing a single cell from a row of 4 always leaves exactly one
+  possibility, and removing more cells breaks uniqueness before eliminating
+  all naked singles.
+- {lit}`m = 2, n = 3` (6×6): **Yes.** Concrete example in
+  {lit}`Examples.HardPuzzle23`.
+- {lit}`m = n = 3` (9×9): **Yes.** Found by brute-force search.
+
+**Conjecture:** For all {lit}`m, n` with {lit}`m * n ≥ 6`, a hard puzzle
+exists. The minimum number of givens for a hard 6×6 puzzle is 11–12
+(out of 36 cells). No uniform construction is known — the given
+positions depend on the specific board and resist simple patterns.
+-/
+
+/-- No hard puzzle exists for 1×1 boards: {lean}`Fin 1` has only one
+element, so the possible set has cardinality at most 1. -/
+theorem no_hard_puzzle_1x1 : ¬ ∃ p : Puzzle 1 1, HardPuzzle 1 1 p := by
+  intro ⟨p, _, ⟨c, hempty⟩, hall⟩
+  have h := hall c hempty
+  have : (possibleSet 1 1 p c).card ≤ Finset.univ.card := Finset.card_filter_le _ _
+  simp at this
+  omega
+
 end SudokuTheory
