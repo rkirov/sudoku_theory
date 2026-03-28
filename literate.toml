@@ -1,5 +1,13 @@
 docstrings_as_text = true
 
+order = [
+  "SudokuTheory",
+  "SudokuTheory.Defs",
+  "SudokuTheory.Defs.Board",
+  "SudokuTheory.Defs.Valid",
+  "SudokuTheory.Defs.Puzzle",
+]
+
 [metadata]
 title = "Sudoku Theory"
 description = "A formal theory of Sudoku puzzles in Lean 4"

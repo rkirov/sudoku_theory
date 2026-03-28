@@ -1,11 +1,19 @@
 import SudokuTheory.Defs.Valid
+import Mathlib.Data.Fintype.Basic
+import Mathlib.Data.Finset.Card
+import Mathlib.Data.Fintype.Prod
 
 /-!
 # Puzzles and Solutions
 
 A *puzzle* is a partially filled board: some cells have given values,
-others are empty. A *solution* to a puzzle is a valid completed board
+others are empty. A *solution* to a puzzle is a valid (completed) board
 that agrees with all the given cells.
+
+Note that in this formalization, filling in a cell produces a new puzzle
+with one fewer empty cell. Solving a Sudoku is thus a sequence of puzzles,
+each strictly closer to the final board. There is no mutable state — each
+step is a fresh, more constrained puzzle.
 
 We classify puzzles by their solution count:
 - *well-posed*: exactly one solution (the standard for published puzzles)
@@ -44,7 +52,7 @@ def IsSolution [NeZero m] [NeZero n] (p : Puzzle m n) (b : Board m n) : Prop :=
 
 /-- A puzzle has a unique solution (well-posed). -/
 def WellPosed [NeZero m] [NeZero n] (p : Puzzle m n) : Prop :=
-  ∃ b, IsSolution p b ∧ ∀ b', IsSolution p b' → b' = b
+  ∃! b, IsSolution p b
 
 /-- A puzzle has no solution. -/
 def Unsolvable [NeZero m] [NeZero n] (p : Puzzle m n) : Prop :=
@@ -61,40 +69,61 @@ A value is *possible* for an empty cell if placing it there would not
 immediately conflict with any given in the same row, column, or block.
 -/
 
-/-- Value {lit}`v` conflicts with a given in the same row as cell {lit}`(i, j)`. -/
-def RowConflict (p : Puzzle m n) (i j : Fin (m * n)) (v : Fin (m * n)) : Prop :=
-  ∃ j', j' ≠ j ∧ p i j' = some v
+/-- Value {lit}`v` conflicts with a given in the same row as cell {lit}`c`. -/
+def RowConflict (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) : Prop :=
+  ∃ j', j' ≠ c.2 ∧ p c.1 j' = some v
 
-/-- Value {lit}`v` conflicts with a given in the same column as cell {lit}`(i, j)`. -/
-def ColConflict (p : Puzzle m n) (i j : Fin (m * n)) (v : Fin (m * n)) : Prop :=
-  ∃ i', i' ≠ i ∧ p i' j = some v
+/-- Value {lit}`v` conflicts with a given in the same column as cell {lit}`c`. -/
+def ColConflict (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) : Prop :=
+  ∃ i', i' ≠ c.1 ∧ p i' c.2 = some v
 
-/-- Value {lit}`v` conflicts with a given in the same block as cell {lit}`(i, j)`. -/
+/-- Value {lit}`v` conflicts with a given in the same block as cell {lit}`c`. -/
 def BlockConflict (m n : Nat) [NeZero m] [NeZero n]
-    (p : Puzzle m n) (i j : Fin (m * n)) (v : Fin (m * n)) : Prop :=
-  ∃ i' j', (i', j') ≠ (i, j) ∧
-    i'.val / m = i.val / m ∧ j'.val / n = j.val / n ∧
-    p i' j' = some v
+    (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) : Prop :=
+  ∃ c', c' ≠ c ∧
+    c'.1.val / m = c.1.val / m ∧ c'.2.val / n = c.2.val / n ∧
+    p c'.1 c'.2 = some v
 
-/-- Value {lit}`v` is *possible* for cell {lit}`(i, j)`: it does not conflict
+/-- Value {lit}`v` is *possible* for cell {lit}`c`: it does not conflict
 with any given in the same row, column, or block. -/
 def IsPossible (m n : Nat) [NeZero m] [NeZero n]
-    (p : Puzzle m n) (i j : Fin (m * n)) (v : Fin (m * n)) : Prop :=
-  ¬RowConflict p i j v ∧ ¬ColConflict p i j v ∧ ¬BlockConflict m n p i j v
+    (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) : Prop :=
+  ¬RowConflict p c v ∧ ¬ColConflict p c v ∧ ¬BlockConflict m n p c v
+
+instance instDecidableRowConflict (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) :
+    Decidable (RowConflict p c v) := Fintype.decidableExistsFintype
+
+instance instDecidableColConflict (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) :
+    Decidable (ColConflict p c v) := Fintype.decidableExistsFintype
+
+instance instDecidableBlockConflict [NeZero m] [NeZero n]
+    (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) :
+    Decidable (BlockConflict m n p c v) := Fintype.decidableExistsFintype
+
+instance instDecidableIsPossible [NeZero m] [NeZero n]
+    (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) :
+    Decidable (IsPossible m n p c v) :=
+  instDecidableAnd
+
+/-- The finite set of possible values for cell {lit}`c`: all values in
+{lit}`Fin (m * n)` that do not conflict with any given in the same row,
+column, or block. -/
+noncomputable def possibleSet (m n : Nat) [NeZero m] [NeZero n]
+    (p : Puzzle m n) (c : Cell m n) : Finset (Fin (m * n)) :=
+  Finset.univ.filter (IsPossible m n p c)
 
 /-!
 ## Hard Puzzles
 
-A well-posed puzzle is *hard* (with respect to naked singles) if every
-empty cell has at least two possible values. Such puzzles cannot be
-solved by the most basic elimination strategy.
+A well-posed puzzle is *hard* (with respect to naked singles) if the
+possible set of every empty cell has cardinality at least 2. Such puzzles
+cannot be solved by the most basic elimination strategy.
 -/
 
-/-- A well-posed puzzle where no empty cell has a unique possible value. -/
+/-- A well-posed puzzle where every empty cell has at least two possible values. -/
 def HardPuzzle (m n : Nat) [NeZero m] [NeZero n] (p : Puzzle m n) : Prop :=
   WellPosed p ∧
-  ∀ i j, p i j = none →
-    ∀ v, IsPossible m n p i j v →
-      ∃ w, w ≠ v ∧ IsPossible m n p i j w
+  ∀ c : Cell m n, p c.1 c.2 = none →
+    2 ≤ (possibleSet m n p c).card
 
 end SudokuTheory
