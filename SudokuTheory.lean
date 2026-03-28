@@ -1,34 +1,32 @@
 /-!
-# Sudoku Theory
+# Sudoku Formal Math Theory
 
-A formal theory of Sudoku puzzles in Lean 4.
+A formal treatment of Sudoku puzzles in Lean 4.
 
-Sudoku is a popular logic puzzle that usually looks like this:
+Sudoku is a well-known logic puzzle, typically presented as follows:
 
 ![A typical 9×9 Sudoku puzzle](images/sudoku-example.png)
 
-The rules are simple:
-- Each cell must contain a value from 1 to 9.
-- Each row must contain each value from 1 to 9 exactly once.
-- Each column must contain each value from 1 to 9 exactly once.
-- Each of the nine 3×3 blocks must contain each value from 1 to 9 exactly once.
-- There is a unique solution that satisfies all these constraints.
+The rules are straightforward:
+- Fill each cell with a digit from 1 to 9.
+- Every row contains each digit exactly once.
+- Every column contains each digit exactly once.
+- Every 3×3 block contains each digit exactly once.
+- The puzzle has a unique solution satisfying all constraints.
 
-To formalize Sudoku, we generalize the grid size and block dimensions. In our theory,
-Sudoku is played on a grid of size {lit}`m * n × m * n`, divided into
-rectangular blocks of {lit}`m` rows and {lit}`n` columns. The goal is to fill
-every cell with a value from {lit}`Fin (m * n)` so that each row, column,
-and block contains every value exactly once.
+This library generalizes the grid size and block dimensions. A Sudoku board has
+size {lit}`m * n × m * n`, partitioned into rectangular blocks of {lit}`m` rows
+and {lit}`n` columns. Each cell takes a value in {lit}`Fin (m * n)` (Lean's
+way of describing finite sets from {lit}`0` to {lit}`m * n - 1`), and every
+row, column, and block must contain each value exactly once.
 
-Standard 9×9 Sudoku uses {lit}`m = n = 3`. A popular 6×6 variant uses
-{lit}`m = 3, n = 2` (blocks of 3 rows × 2 columns).
+Standard 9×9 Sudoku corresponds to {lit}`m = n = 3`. The common 6×6 variant
+uses {lit}`m = 3, n = 2` (blocks of 3 rows × 2 columns).
 
-To read more about Sudoku, see the [Wikipedia article](https://en.wikipedia.org/wiki/Sudoku).
+For background on Sudoku, see the [Wikipedia article](https://en.wikipedia.org/wiki/Sudoku).
 
-This theory is organized into the following modules. They are
-written using Verso (lean4's literate coding tool), so you can read them as standalone documents.
-
-Read them in order, to learn more about the theory and how to use it.
+The modules below are written with Verso, Lean 4's literate programming tool,
+so each one doubles as a readable document. They are best read in order.
 
 ## Modules
 

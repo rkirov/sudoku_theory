@@ -16,12 +16,33 @@ We represent a board as a function from row and column indices to values.
 Every cell belongs to exactly three *regions*: its row, its column, and its block.
 The validity constraints require each region to contain every value exactly once.
 
+For a standard {lit}`m = n = 3` board, the layout is:
+
+             bj=0    bj=1    bj=2
+           ┌───────┬───────┬───────┐
+    bi=0   │ . . . │ . . . │ . . . │  rows 0–2
+           │ . . . │ . . . │ . . . │
+           │ . . . │ . . . │ . . . │
+           ├───────┼───────┼───────┤
+    bi=1   │ . . . │ . . . │ . . . │  rows 3–5
+           │ . . . │ . . . │ . . . │
+           │ . . . │ . . . │ . . . │
+           ├───────┼───────┼───────┤
+    bi=2   │ . . . │ . . . │ . . . │  rows 6–8
+           │ . . . │ . . . │ . . . │
+           │ . . . │ . . . │ . . . │
+           └───────┴───────┴───────┘
+             cols    cols    cols
+             0–2     3–5     6–8
+
 For an order {lit}`m × n` board:
 - There are {lit}`m * n` rows and {lit}`m * n` columns.
 - There are {lit}`n` block-rows (horizontal bands of {lit}`m` rows each) and
   {lit}`m` block-columns (vertical bands of {lit}`n` columns each),
   giving {lit}`m * n` blocks total.
-- Each block spans {lit}`m` consecutive rows and {lit}`n` consecutive columns.
+- Each block is indexed by its position: {lit}`bi : Fin n` for the block-row
+  and {lit}`bj : Fin m` for the block-column. Block {lit}`(bi, bj)` spans
+  rows {lit}`bi * m .. bi * m + (m-1)` and columns {lit}`bj * n .. bj * n + (n-1)`.
 -/
 
 /-- A completed Sudoku board of order {lit}`m × n`: an {lit}`(m * n) × (m * n)` grid
@@ -37,7 +58,7 @@ variable {m n : Nat}
 abbrev Cell (m n : Nat) := Fin (m * n) × Fin (m * n)
 
 /-!
-## Same-Region Predicates
+# Same-Region Predicates
 
 Rather than building explicit sets of cell coordinates, we define when
 two cells share a region. These predicates are used in the validity
