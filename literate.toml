@@ -1,0 +1,5 @@
+[metadata]
+title = "Sudoku Theory"
+description = "A formal theory of Sudoku puzzles in Lean 4"
+
+docstrings_as_text = true
