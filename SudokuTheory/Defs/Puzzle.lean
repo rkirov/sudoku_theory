@@ -67,40 +67,58 @@ def Ambiguous [NeZero m] [NeZero n] (p : Puzzle m n) : Prop :=
 
 A value is *possible* for an empty cell if placing it there would not
 immediately conflict with any given in the same row, column, or block.
+
+All definitions below are {lit}`Prop`-valued with {lit}`Decidable` instances,
+so they work both for formal proofs and for computation via
+{lit}`native_decide`.
 -/
 
-/-- Check whether any index in {lit}`Fin s` satisfies a predicate. -/
-private def anyFin (s : Nat) (f : Fin s → Bool) : Bool :=
-  (List.finRange s).any f
+/-- Value {lit}`v` conflicts with a given in the same row as cell {lit}`c`. -/
+def RowConflict (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) : Prop :=
+  ∃ j', j' ≠ c.2 ∧ p c.1 j' = some v
 
-/-- Does value {lit}`v` conflict with a given in the same row as cell {lit}`c`? -/
-def rowConflict (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) : Bool :=
-  anyFin _ fun j' => j' != c.2 && p c.1 j' == some v
+/-- Value {lit}`v` conflicts with a given in the same column as cell {lit}`c`. -/
+def ColConflict (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) : Prop :=
+  ∃ i', i' ≠ c.1 ∧ p i' c.2 = some v
 
-/-- Does value {lit}`v` conflict with a given in the same column as cell {lit}`c`? -/
-def colConflict (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) : Bool :=
-  anyFin _ fun i' => i' != c.1 && p i' c.2 == some v
+/-- Value {lit}`v` conflicts with a given in the same block as cell {lit}`c`. -/
+def BlockConflict (m n : Nat) [NeZero m] [NeZero n]
+    (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) : Prop :=
+  ∃ c' : Cell m n, c' ≠ c ∧
+    c'.1.val / m = c.1.val / m ∧ c'.2.val / n = c.2.val / n ∧
+    p c'.1 c'.2 = some v
 
-/-- Does value {lit}`v` conflict with a given in the same block as cell {lit}`c`? -/
-def blockConflict (m n : Nat) [NeZero m] [NeZero n]
-    (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) : Bool :=
-  anyFin _ fun i' => anyFin _ fun j' =>
-    (i' != c.1 || j' != c.2) &&
-    i'.val / m == c.1.val / m && j'.val / n == c.2.val / n &&
-    p i' j' == some v
-
-/-- Is value {lit}`v` *possible* for cell {lit}`c`? It does not conflict
+/-- Value {lit}`v` is *possible* for cell {lit}`c`: it does not conflict
 with any given in the same row, column, or block. -/
-def isPossible (m n : Nat) [NeZero m] [NeZero n]
-    (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) : Bool :=
-  !rowConflict p c v && !colConflict p c v && !blockConflict m n p c v
+def IsPossible (m n : Nat) [NeZero m] [NeZero n]
+    (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) : Prop :=
+  ¬RowConflict p c v ∧ ¬ColConflict p c v ∧ ¬BlockConflict m n p c v
+
+/-!
+### Decidability
+
+Each conflict predicate quantifies over a finite type, making it
+decidable via {name}`Fintype.decidableExistsFintype`.
+-/
+
+instance (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) :
+    Decidable (RowConflict p c v) := Fintype.decidableExistsFintype
+
+instance (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) :
+    Decidable (ColConflict p c v) := Fintype.decidableExistsFintype
+
+instance [NeZero m] [NeZero n] (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) :
+    Decidable (BlockConflict m n p c v) := Fintype.decidableExistsFintype
+
+instance [NeZero m] [NeZero n] (p : Puzzle m n) (c : Cell m n) (v : Fin (m * n)) :
+    Decidable (IsPossible m n p c v) := instDecidableAnd
 
 /-- The finite set of possible values for cell {lit}`c`: all values in
 {lit}`Fin (m * n)` that do not conflict with any given in the same row,
 column, or block. -/
 def possibleSet (m n : Nat) [NeZero m] [NeZero n]
     (p : Puzzle m n) (c : Cell m n) : Finset (Fin (m * n)) :=
-  Finset.univ.filter (fun v => isPossible m n p c v)
+  Finset.univ.filter (IsPossible m n p c ·)
 
 /-!
 ## Hard Puzzles
