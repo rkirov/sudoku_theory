@@ -166,4 +166,68 @@ theorem ColValid.permuteCols {b : Board m n} {j : Fin (m * n)}
 def RespectsStacks (n : Nat) [NeZero n] (σ : Equiv.Perm (Fin (m * n))) : Prop :=
   ∀ j₁ j₂ : Fin (m * n), j₁.val / n = j₂.val / n → (σ j₁).val / n = (σ j₂).val / n
 
+/-!
+# Symmetry Group and Equivalence Classes
+
+The transformations above generate the *sudoku symmetry group* acting
+on boards of order {lit}`m × n`. Every element of this group sends a
+valid board to a valid board, and a puzzle to an equivalent puzzle
+with the same solution structure.
+
+The group combines five families of transformations:
+
+| Symmetry | Count |
+|---|---|
+| Value relabeling | {lit}`(m * n)!` |
+| Row permutations within each of {lit}`n` bands | {lit}`(m !)^n` |
+| Band permutations (permute horizontal bands) | {lit}`n !` |
+| Column permutations within each of {lit}`m` stacks | {lit}`(n !)^m` |
+| Stack permutations (permute vertical stacks) | {lit}`m !` |
+
+When {lit}`m = n`, transposing the board (swapping rows and columns) is
+an additional symmetry, contributing a factor of 2.
+
+This gives a lower bound on the size of each equivalence class:
+
+  {lit}`(m * n)! × (m !)^n × n ! × (n !)^m × m !`
+
+(multiplied by 2 when {lit}`m = n`).
+
+For standard 9×9 Sudoku ({lit}`m = n = 3`), this evaluates to
+1,218,998,108,160.
+
+The bound is tight for *generic* puzzles whose stabilizer is trivial
+(no automorphisms). Some highly symmetric puzzles have a non-trivial
+stabilizer, making their equivalence class smaller.
+
+**Open problem:** Prove that this is the *full* symmetry group — that
+no other transformation of the board preserves sudoku validity for all
+boards. This is known to be true for 9×9 but has not been formally
+verified.
+-/
+
+/-- Factorial, used to express the symmetry group order. -/
+def fac : Nat → Nat
+  | 0 => 1
+  | n + 1 => (n + 1) * fac n
+
+/-- The order of the sudoku symmetry group (excluding transpose). -/
+def symmetryGroupOrder (m n : Nat) : Nat :=
+  fac (m * n) *
+  fac m ^ n *
+  fac n *
+  fac n ^ m *
+  fac m
+
+#eval symmetryGroupOrder 3 3  -- 1,218,998,108,160 / 2 (without transpose)
+
+/-- The number of equivalent puzzles is at least the symmetry group order.
+This is a lower bound because some puzzles may have automorphisms. -/
+theorem equivalence_class_lower_bound [NeZero m] [NeZero n]
+    (b : Board m n) (hb : ValidBoard m n b) :
+    ∃ S : Finset (Board m n),
+      S.card ≥ symmetryGroupOrder m n ∧
+      ∀ b' ∈ S, ValidBoard m n b' := by
+  sorry -- requires showing the group action is faithful on generic boards
+
 end SudokuTheory
