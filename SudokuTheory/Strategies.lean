@@ -5,30 +5,81 @@ import Mathlib.Data.Finset.Card
 # Solving Strategies
 
 This module formalizes the logical principles behind common Sudoku
-solving strategies. The central result is the *subset theorem*, which
-unifies naked singles, naked pairs, naked triples, hidden singles, and
-their duals into a single pigeonhole argument.
+solving strategies. Sudoku solvers recognize dozens of named techniques
+(see [sudokuwiki.org](https://www.sudokuwiki.org/Strategy_Families) or
+[sudoku.coach](https://sudoku.coach/en/learn) for comprehensive lists).
 
-## The Subset Theorem
+Remarkably, most of these techniques are instances of just two
+abstract principles:
 
-Consider a region (row, column, or block) in a valid completed board.
-Because each value appears exactly once, any subset {lit}`S` of values
-of size {lit}`k` occupies exactly {lit}`k` cells.
+1. **The Subset Principle** (pigeonhole on regions) — covers all
+   constraint-propagation strategies.
+2. **The Uniqueness Principle** (well-posedness forbids deadly
+   patterns) — covers all uniqueness-based strategies.
 
-For a *puzzle* (partially filled board), this has a powerful consequence.
-Suppose we identify {lit}`k` empty cells in a region whose combined
-possible values form a set of size exactly {lit}`k`. Then in any
-valid completion:
-- Those {lit}`k` cells must use exactly those {lit}`k` values (a bijection).
-- No other cell in the region can use any of those values.
+## Strategy Taxonomy
 
-This single principle, applied with {lit}`k = 1`, gives the *naked
-single* strategy; with {lit}`k = 2`, the *naked pair*; and so on.
-Taking the complement gives the *hidden* variants.
+The table below maps standard solver terminology to the abstract
+principles formalized here.
+
+### Subset Principle ({lit}`k` values in {lit}`k` cells)
+
+| Solver name | {lit}`k` | Variant | Formalized as |
+|---|---|---|---|
+| Naked Single | 1 | naked | {lit}`naked_single` |
+| Hidden Single | 1 | hidden | (dual of naked single) |
+| Naked Pair | 2 | naked | {lit}`row_values_card` with {lit}`|C| = 2` |
+| Hidden Pair | 2 | hidden | (complement) |
+| Naked Triple | 3 | naked | {lit}`row_values_card` with {lit}`|C| = 3` |
+| Naked Quad | 4 | naked | {lit}`row_values_card` with {lit}`|C| = 4` |
+| Pointing Pair | 2 | cross-region | intersection of row/col and block |
+| Box/Line Reduction | — | cross-region | intersection of block and row/col |
+
+The *naked* variant picks {lit}`k` cells whose combined candidates
+have size {lit}`k`; the *hidden* variant picks {lit}`k` values that
+appear as candidates in only {lit}`k` cells. These are dual: if {lit}`k`
+cells hold exactly {lit}`k` values, the remaining {lit}`s - k` cells
+hold the remaining {lit}`s - k` values (where {lit}`s = m * n`).
+
+### Fish Strategies (subset principle across rows/columns)
+
+| Solver name | Rows | Columns |
+|---|---|---|
+| X-Wing | 2 | 2 |
+| Swordfish | 3 | 3 |
+| Jellyfish | 4 | 4 |
+
+These apply the subset principle globally: if a value can appear in
+only {lit}`k` columns across {lit}`k` rows, it must appear in those
+columns and can be eliminated from those columns in other rows.
+This is the same pigeonhole argument applied to row–column
+intersections rather than within a single region.
+
+### Uniqueness Principle (well-posedness)
+
+| Solver name | Formalized as |
+|---|---|
+| Unique Rectangle | {lit}`no_deadly_swap` |
+| Hidden Rectangle | (same principle, different cell selection) |
+| Avoidable Rectangle | (same principle) |
+| BUG+1 | (same principle, board-wide) |
+
+All of these reason: "if this candidate were absent, a deadly pattern
+(value swap preserving validity) would exist, giving two solutions.
+Since the puzzle is well-posed, the candidate must be present."
+
+### Strategies Not Covered Here
+
+Chaining strategies (XY-Chain, X-Cycle, AIC, Forcing Chains, Colouring)
+and exotic strategies (Almost Locked Sets, Exocet, Sue-de-Coq) involve
+multi-step logical inference that goes beyond single-region analysis.
+Formalizing these would require defining *inference chains* — sequences
+of strong and weak links between candidates — which is a natural
+direction for future work.
 
 ## Formalization
 
-We state the theorem in terms of {name}`Function.Injective`, which is
+We state the theorems in terms of {name}`Function.Injective`, which is
 our formalization of "all distinct" in a region.
 -/
 
@@ -37,11 +88,12 @@ namespace SudokuTheory
 variable {m n : Nat}
 
 /-!
-## Pigeonhole for Injective Functions
+# Pigeonhole for Injective Functions
 
 The core mathematical fact: if {lit}`f : Fin s → Fin s` is injective
 (hence bijective on a finite type), then the preimage of any subset
-has the same cardinality as the subset.
+has the same cardinality as the subset. This single lemma is the
+engine behind all subset-based strategies.
 -/
 
 /-- For an injective function {lit}`f : Fin s → Fin s`, the preimage
@@ -54,18 +106,18 @@ theorem Finset.card_preimage_of_injective {s : Nat}
   sorry -- follows from f being a bijection on Fin s
 
 /-!
-## Naked Subset Strategy
+# Naked Subsets
 
-Given a puzzle {lit}`p` and any solution {lit}`b`, consider a row
-{lit}`i`. Let {lit}`C` be a set of {lit}`k` positions (columns) in
-that row, and let {lit}`V` be the set of values that {lit}`b` assigns
-to those positions. If {lit}`|V| = k`, then {lit}`V` is exactly the
-set of values at positions {lit}`C` — no other position in the row
-can hold a value from {lit}`V`.
+In a valid row (or column, or block), the values at any {lit}`k`
+positions form a set of size exactly {lit}`k`, because the region
+function is injective. This is the formal content of all "naked"
+strategies — naked single ({lit}`k = 1`), naked pair ({lit}`k = 2`),
+naked triple ({lit}`k = 3`), naked quad ({lit}`k = 4`).
 -/
 
 /-- In a valid row, the values at any {lit}`k` positions form a set
-of size {lit}`k` (since the row function is injective). -/
+of size {lit}`k` (since the row function is injective).
+This covers naked single, pair, triple, quad — just vary {lit}`|C|`. -/
 theorem row_values_card {b : Board m n} {i : Fin (m * n)}
     (hrow : RowValid b i) (C : Finset (Fin (m * n))) :
     (C.image (b i)).card = C.card :=
@@ -86,11 +138,11 @@ theorem col_values_card {b : Board m n} {j : Fin (m * n)}
   Finset.card_image_of_injective C hcol
 
 /-!
-## Naked Single
+# Naked Single
 
-The simplest instance: if an empty cell has exactly one possible value,
-that value must appear there in any solution. This is a direct
-consequence of the definitions, stated here for clarity.
+The simplest instance of the subset principle: if an empty cell has
+exactly one possible value, that value must appear there in any
+solution. Every sudoku solver applies this rule first.
 -/
 
 /-- If value {lit}`v` is the only possible value for cell {lit}`c` in
@@ -106,7 +158,7 @@ theorem naked_single [NeZero m] [NeZero n]
   sorry
 
 /-!
-## Deadly Patterns and Uniqueness
+# Deadly Patterns and Uniqueness
 
 A *deadly pattern* is a configuration of cells where swapping values
 produces another valid board. If a puzzle is well-posed, no deadly
@@ -118,6 +170,10 @@ intersection of two rows and two columns, spanning two blocks. If
 all four cells contained only values {lit}`{a, b}`, swapping {lit}`a`
 and {lit}`b` in those cells would produce another valid board.
 Therefore, at least one cell must have an additional possible value.
+
+This principle is the formal basis for Unique Rectangles, Hidden
+Rectangles, Avoidable Rectangles, and BUG+1 — all techniques listed
+on sudokuwiki.org under "Uniqueness" strategies.
 -/
 
 /-- A value swap on a set of cells: replace {lit}`a` with {lit}`b` and
@@ -133,7 +189,7 @@ def Board.swap (b : Board m n) (a c : Fin (m * n))
 
 /-- If swapping two values in a set of cells preserves validity and
 agreement, then the puzzle has multiple solutions — contradicting
-well-posedness. -/
+well-posedness. This rules out all deadly patterns. -/
 theorem no_deadly_swap [NeZero m] [NeZero n]
     {p : Puzzle m n} {b : Board m n}
     (hwp : WellPosed p) (hsol : IsSolution p b)
