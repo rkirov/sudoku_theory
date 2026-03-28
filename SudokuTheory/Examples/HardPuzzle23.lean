@@ -75,16 +75,32 @@ theorem solution23_is_solution : IsSolution puzzle23 solution23 :=
 /-!
 ## Well-Posedness
 
-The puzzle has a unique solution. Computational verification in
-{lit}`Examples/HardPuzzle.lean` confirms this via brute-force solve.
-The formal uniqueness proof is left as future work — it requires
-showing that constraint propagation determines every cell.
+The puzzle has a unique solution. Existence is proved above;
+uniqueness is verified computationally in {lit}`Examples/HardPuzzle.lean`
+but not yet proved formally.
+
+**Why {lit}`decide` can't close this:** the uniqueness goal
+{lit}`∀ b : Board 2 3, IsSolution p b → b = solution` quantifies over
+{lit}`Board 2 3 = Fin 6 → Fin 6 → Fin 6`, a type with 6³⁶ ≈ 10²⁸
+elements. Lean's {lit}`Decidable` instance for {lit}`∀` over a {lit}`Fintype`
+enumerates every element — no pruning. By contrast, the backtracking
+solver in {lit}`HardPuzzle.lean` uses constraint propagation and explores
+only a few hundred partial boards.
+
+Possible approaches to close this {lit}`sorry`:
+1. Formalize a constraint-propagation solver in Lean and prove it sound
+   and complete, then run it on this puzzle.
+2. Use a proof-by-reflection tactic that executes the smart search
+   inside the kernel.
+3. Prove uniqueness manually by chaining cell-by-cell deductions
+   (each cell is forced by pairs, triples, or other strategies even
+   though no naked single exists).
 -/
 
 theorem puzzle23_wellposed : WellPosed puzzle23 := by
   refine ⟨solution23, solution23_is_solution, ?_⟩
   intro b hb
-  sorry -- uniqueness: verified computationally in Examples/HardPuzzle.lean
+  sorry
 
 /-!
 ## No Naked Singles
