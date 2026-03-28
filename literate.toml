@@ -6,6 +6,7 @@ order = [
   "SudokuTheory.Defs.Board",
   "SudokuTheory.Defs.Valid",
   "SudokuTheory.Defs.Puzzle",
+  "SudokuTheory.Examples.HardPuzzle23",
 ]
 
 [metadata]
