@@ -118,8 +118,12 @@ theorem puzzle23_no_naked_singles :
 ## Putting It Together
 -/
 
-/-- The 2×3 puzzle is hard: well-posed with no naked singles. -/
+/-- The puzzle has at least one empty cell (e.g. cell (0, 1)). -/
+theorem puzzle23_has_empty : ∃ c : Cell 2 3, puzzle23 c.1 c.2 = none :=
+  ⟨(0, 1), rfl⟩
+
+/-- The 2×3 puzzle is hard: well-posed, has empty cells, and no naked singles. -/
 theorem puzzle23_is_hard : HardPuzzle 2 3 puzzle23 :=
-  ⟨puzzle23_wellposed, puzzle23_no_naked_singles⟩
+  ⟨puzzle23_wellposed, puzzle23_has_empty, puzzle23_no_naked_singles⟩
 
 end SudokuTheory.Examples

@@ -123,14 +123,21 @@ def possibleSet (m n : Nat) [NeZero m] [NeZero n]
 /-!
 ## Hard Puzzles
 
-A well-posed puzzle is *hard* (with respect to naked singles) if the
-possible set of every empty cell has cardinality at least 2. Such puzzles
-cannot be solved by the most basic elimination strategy.
+A well-posed puzzle is *hard* (with respect to naked singles) if it has
+at least one empty cell, and the possible set of every empty cell has
+cardinality at least 2. Such puzzles cannot be solved by the most basic
+elimination strategy.
+
+We require at least one empty cell to exclude the trivial case of a
+fully filled board, which would satisfy the cardinality condition
+vacuously.
 -/
 
-/-- A well-posed puzzle where every empty cell has at least two possible values. -/
+/-- A well-posed puzzle with at least one empty cell where every empty
+cell has at least two possible values. -/
 def HardPuzzle (m n : Nat) [NeZero m] [NeZero n] (p : Puzzle m n) : Prop :=
   WellPosed p ∧
+  (∃ c : Cell m n, p c.1 c.2 = none) ∧
   ∀ c : Cell m n, p c.1 c.2 = none →
     2 ≤ (possibleSet m n p c).card
 
