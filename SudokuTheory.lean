@@ -1,5 +1,6 @@
 import SudokuTheory.Defs
 import SudokuTheory.Examples.HardPuzzle23
+import SudokuTheory.Examples.HardPuzzle33
 
 /-!
 # Sudoku Formal Math Theory
@@ -37,4 +38,5 @@ so each one doubles as a readable document. They are best read in order.
 - `SudokuTheory.Defs.Valid` — validity predicates
 - `SudokuTheory.Defs.Puzzle` — partial boards, solutions, and difficulty
 - `SudokuTheory.Examples.HardPuzzle23` — a concrete hard 6×6 puzzle
+- `SudokuTheory.Examples.HardPuzzle33` — a concrete hard 9×9 puzzle
 -/
