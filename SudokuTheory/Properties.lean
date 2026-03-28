@@ -83,4 +83,87 @@ theorem IsSolution.relabel [NeZero m] [NeZero n]
     IsSolution (p.relabel σ) (b.relabel σ) :=
   ⟨h.1.relabel σ, h.2.relabel σ⟩
 
+/-!
+# Row Permutations
+
+Permuting the rows of a board by {lit}`σ : Equiv.Perm (Fin (m * n))`
+always preserves row and column validity — each row still contains
+the same values, and each column is just a rearrangement of what it was.
+
+However, an arbitrary row permutation does **not** preserve block
+validity. Blocks are only preserved when the permutation *respects
+bands*: it maps each horizontal band (a group of {lit}`m` consecutive
+rows sharing the same block-row index) to some band.
+
+Formally, {lit}`σ` respects bands when
+{lit}`∀ i₁ i₂, i₁.val / m = i₂.val / m → (σ i₁).val / m = (σ i₂).val / m`.
+This includes two important special cases:
+- **Within-band permutations**: {lit}`σ` fixes each band
+  ({lit}`(σ i).val / m = i.val / m` for all {lit}`i`).
+- **Band permutations**: {lit}`σ` permutes entire bands as blocks
+  (every row in band {lit}`k` maps to some band {lit}`σ'(k)`).
+
+The set of all band-respecting row permutations forms the *wreath
+product* {lit}`Sym(Fin m) ≀ Sym(Fin n)`, and analogously for columns.
+-/
+
+/-- Permute the rows of a board. -/
+def Board.permuteRows (σ : Equiv.Perm (Fin (m * n))) (b : Board m n) : Board m n :=
+  fun i j => b (σ i) j
+
+/-- Row permutation preserves row validity: row {lit}`i` of the permuted
+board is row {lit}`σ i` of the original, which has the same values. -/
+theorem RowValid.permuteRows {b : Board m n} {i : Fin (m * n)}
+    (σ : Equiv.Perm (Fin (m * n))) (h : RowValid b (σ i)) :
+    RowValid (b.permuteRows σ) i :=
+  h
+
+/-- Row permutation preserves column validity: each column is a
+rearrangement of the original column. -/
+theorem ColValid.permuteRows {b : Board m n} {j : Fin (m * n)}
+    (h : ColValid b j) (σ : Equiv.Perm (Fin (m * n))) :
+    ColValid (b.permuteRows σ) j :=
+  h.comp σ.injective
+
+/-- A row permutation *respects bands* if rows in the same band are
+mapped to rows in the same band. -/
+def RespectsBands (m : Nat) [NeZero m] (σ : Equiv.Perm (Fin (m * n))) : Prop :=
+  ∀ i₁ i₂ : Fin (m * n), i₁.val / m = i₂.val / m → (σ i₁).val / m = (σ i₂).val / m
+
+/-- A band-respecting row permutation preserves block validity. -/
+theorem BlockValid.permuteRows [NeZero m] [NeZero n]
+    {b : Board m n} {bi : Fin n} {bj : Fin m}
+    (h : BlockValid m n b bi bj)
+    (σ : Equiv.Perm (Fin (m * n)))
+    (hσ : RespectsBands m σ) :
+    ∃ bi' : Fin n, BlockValid m n (b.permuteRows σ) bi' bj := by
+  sorry -- the target block-row is determined by σ's action on the band
+
+/-!
+# Column Permutations
+
+Column permutations are entirely analogous to row permutations.
+-/
+
+/-- Permute the columns of a board. -/
+def Board.permuteCols (σ : Equiv.Perm (Fin (m * n))) (b : Board m n) : Board m n :=
+  fun i j => b i (σ j)
+
+/-- Column permutation preserves row validity. -/
+theorem RowValid.permuteCols {b : Board m n} {i : Fin (m * n)}
+    (h : RowValid b i) (σ : Equiv.Perm (Fin (m * n))) :
+    RowValid (b.permuteCols σ) i :=
+  h.comp σ.injective
+
+/-- Column permutation preserves column validity. -/
+theorem ColValid.permuteCols {b : Board m n} {j : Fin (m * n)}
+    (σ : Equiv.Perm (Fin (m * n))) (h : ColValid b (σ j)) :
+    ColValid (b.permuteCols σ) j :=
+  h
+
+/-- A column permutation *respects stacks* if columns in the same stack
+(vertical band of {lit}`n` columns) are mapped to columns in the same stack. -/
+def RespectsStacks (n : Nat) [NeZero n] (σ : Equiv.Perm (Fin (m * n))) : Prop :=
+  ∀ j₁ j₂ : Fin (m * n), j₁.val / n = j₂.val / n → (σ j₁).val / n = (σ j₂).val / n
+
 end SudokuTheory
